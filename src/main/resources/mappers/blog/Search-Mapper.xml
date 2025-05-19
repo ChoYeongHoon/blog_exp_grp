@@ -1,0 +1,171 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="SearchMapper">
+
+	<!-- 검색 정보 리스트 -->
+	<select id="SEL_SEARCH_INFO_LIST" resultType="Map" parameterType="Map">
+		<![CDATA[
+		SELECT ID                                        AS ID              /* ID */
+			 , ORIGIN                                    AS ORIGIN          /* ORIGIN(1:강남맛집 2:리뷰노트) */
+			 , CASE
+			     WHEN ORIGIN = 1
+			     THEN '강남맛집'
+			     WHEN ORIGIN = 2
+			     THEN '리뷰노트'
+			     ELSE ''
+			   END                                       AS ORIGIN_NM       /* ORIGIN NM */
+			 , ORIGIN_ID                                 AS ORIGIN_ID       /* ORIGIN ID */
+			 , TITLE                                     AS TITLE           /* 제목 */
+			 , CHANNEL                                   AS CHANNEL         /* 채널(1:블로그 2:릴스 3:유튜브 4:쇼츠 5:블로그+클립 6:틱톡 7:인스타그램 8:클립) */
+			 , CASE
+			     WHEN CHANNEL = 1
+			     THEN '블로그'
+			     WHEN CHANNEL = 2
+			     THEN '릴스'
+			     WHEN CHANNEL = 3
+			     THEN '유튜브'
+			     WHEN CHANNEL = 4
+			     THEN '쇼츠'
+			     WHEN CHANNEL = 5
+			     THEN '블로그+클립'
+			     WHEN CHANNEL = 6
+			     THEN '틱톡'
+			     WHEN CHANNEL = 7
+			     THEN '인스타그램'
+			     WHEN CHANNEL = 8
+			     THEN '클립'
+			     ELSE ''
+			   END                                       AS CHANNEL_NM      /* 채널명 */
+			 , TYPE                                      AS TYPE            /* 타입(1:방문 2:배송 3:기자단 4:기타 5:테이크아웃 6:당일지급) */
+			 , CASE
+			     WHEN TYPE = 1
+			     THEN '방문'
+			     WHEN TYPE = 2
+			     THEN '배송'
+			     WHEN TYPE = 3
+			     THEN '기자단'
+			     WHEN TYPE = 4
+			     THEN '기타'
+			     WHEN TYPE = 5
+			     THEN '테이크아웃'
+			     WHEN TYPE = 6
+			     THEN '당일지급'
+			     ELSE ''
+			   END                                         AS TYPE_NM           /* 타입명 */
+			 , DATE_FORMAT(APPLY_END_AT, '%Y-%m-%d %H:%i') AS APPLY_END_AT      /* 승인 종료 일시 */
+			 , DATE_FORMAT(APPLY_END_AT, '%Y%m%d')         AS APPLY_END_AT_DT   /* 승인 종료 일자 */
+			 , DATE_FORMAT(APPLY_END_AT, '%H:%i')          AS APPLY_END_AT_TIME /* 승인 종료 시간 */
+			 , CASE
+			     WHEN ORIGIN = 1
+			     THEN ''
+			     ELSE DATEDIFF(APPLY_END_AT, NOW())
+			   END                                       AS DDAY            /* 디데이 */
+			 , OFFER                                     AS OFFER           /* 제공 */
+			 , LOWER(CONCAT(
+				 SUBSTRING(HEX(IMAGE_KEY), 1, 8), '-',
+				 SUBSTRING(HEX(IMAGE_KEY), 9, 4), '-',
+				 SUBSTRING(HEX(IMAGE_KEY), 13, 4), '-',
+				 SUBSTRING(HEX(IMAGE_KEY), 17, 4), '-',
+				 SUBSTRING(HEX(IMAGE_KEY), 21)
+			   ))                                        AS IMAGE_KEY       /* 이미지 URL */
+			 , IMAGE_STATUS                              AS IMAGE_STATUS    /* 이미지 상태(0:없음, 1:있음) */
+			 , PREMIUM_LEVEL                             AS PREMIUM_LEVEL   /* 프리미엄 레벨 */
+			 , RECRUIT                                   AS RECRUIT         /* 모집 */
+			 , APPLIED                                   AS APPLIED         /* 신청 */
+			 , ROUND(APPLIED / RECRUIT, 2)               AS RECRUIT_RATE    /* 모집률(신청 / 모집) */
+			 , CATEGORY                                  AS CATEGORY        /* 카테고리(1:맛집 2:기타 3:뷰티 4:식품 5:여행 6:디지털 7:반려동물) */
+			 , CASE
+			     WHEN CATEGORY = 1
+			     THEN '맛집'
+			     WHEN CATEGORY = 2
+			     THEN '기타'
+			     WHEN CATEGORY = 3
+			     THEN '뷰티'
+			     WHEN CATEGORY = 4
+			     THEN '식품'
+			     WHEN CATEGORY = 5
+			     THEN '여행'
+			     WHEN CATEGORY = 6
+			     THEN '디지털'
+			     WHEN CATEGORY = 7
+			     THEN '반려동물'
+			     WHEN CATEGORY = 8
+			     THEN '문화'
+			     WHEN CATEGORY = 9
+			     THEN '패션'
+			     WHEN CATEGORY = 10
+			     THEN '생활'
+			     ELSE ''
+			   END                                       AS CATEGORY_NM     /* 카테고리명 */
+			 , REGION1                                   AS REGION1         /* 시/도 */
+			 , REGION2                                   AS REGION2         /* 시/군/구 */
+			 , DATE_FORMAT(CREATED_AT, '%Y-%m-%d %H:%i') AS CREATED_AT      /* 생성 일시 */
+			 , DATE_FORMAT(UPDATED_AT, '%Y-%m-%d %H:%i') AS UPDATED_AT      /* 수정 일시 */
+			 
+			 , 'N'    AS LIKE_YN    /* 좋아요 처리 후(보류) */
+     		 , '100'  AS LIKE_CNT   /* 좋아요 처리 후(보류) */
+		FROM campaigns
+		WHERE APPLY_END_AT >= NOW()
+		AND (TITLE LIKE CONCAT('%', #{keyword}, '%') OR OFFER LIKE CONCAT('%', #{keyword}, '%'))
+		]]>
+		
+		<!-- 시/도 -->
+		<if test="region1 != 0">
+		<![CDATA[
+			AND REGION1 = #{region1}
+		]]>
+		</if>
+		
+		<!-- 구/군 -->
+		<if test="region2 != 0">
+		<![CDATA[
+			AND REGION2 = #{region2}
+		]]>
+		</if>
+		
+		<!-- 카테고리 -->
+		<if test="category != 0">
+		<![CDATA[
+			AND CATEGORY = #{category}
+		]]>
+		</if>
+		
+		<!-- 채널 -->
+		<if test="channel != 0">
+		<![CDATA[
+			AND CHANNEL = #{channel}
+		]]>
+		</if>
+		
+		<!-- 유형(타입) -->
+		<if test="type != 0">
+		<![CDATA[
+			AND TYPE = #{type}
+		]]>
+		</if>
+		
+		<!-- 정렬 -->
+		<choose>
+			<when test="sort == 1"> <!-- 최신순 -->
+			<![CDATA[
+				ORDER BY CREATED_AT DESC
+			]]>
+			</when>
+			<when test="sort == 2"> <!-- 마감임박순 -->
+			<![CDATA[
+				ORDER BY DDAY IS NULL, DDAY ASC
+			]]>
+			</when>
+			<otherwise> <!-- 전체(신청률) -->
+			<![CDATA[
+				ORDER BY RECRUIT_RATE DESC
+			]]>
+			</otherwise>
+		</choose>
+		
+		<![CDATA[
+		LIMIT #{limit} OFFSET #{offset}
+    	]]>
+	</select>
+	
+</mapper>
