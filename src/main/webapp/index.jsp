@@ -1,7 +1,8 @@
 <%@ page language="java" contentType="text/html; charset=utf-8" pageEncoding="utf-8"%>
 
-<%-- <jsp:forward page="/WEB-INF/jsp/index.jsp"/> --%>
+<jsp:forward page="/WEB-INF/jsp/index.jsp"/>
 
+<%-- 
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -13,3 +14,4 @@
 <h1>HELLO WORLD</h1>
 </body>
 </html>
+ --%>
